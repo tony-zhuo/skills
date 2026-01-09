@@ -15,6 +15,9 @@ A collection of development skills for [Claude Code](https://claude.ai/claude-co
 - **swift-ios-skill** - iOS development patterns (MVVM/MVC, SwiftUI/UIKit, navigation, networking, testing)
 - **swift-macos-skill** - macOS development patterns (window management, menu bar apps, screen capture, sandboxing, AppKit)
 
+### General
+- **tutorial-mode** - Interactive tutorial mode for step-by-step project development and code understanding
+
 ## Installation
 
 ### Install all skills
