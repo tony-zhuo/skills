@@ -1,6 +1,6 @@
 ---
 name: go-patterns-skill
-description: Comprehensive design patterns for Go including all GoF patterns adapted for Go, plus Go-specific concurrency patterns like Circuit Breaker, Retry, Worker Pool, and Semaphore.
+description: Comprehensive design patterns for Go including all GoF patterns adapted for Go, plus Go-specific concurrency patterns like Circuit Breaker, Retry, Worker Pool, and Semaphore. Backed by concrete examples from the golang-design-pattern repository.
 ---
 
 # Go Design Patterns
@@ -10,6 +10,7 @@ Complete design patterns reference for Go.
 ## Patterns Included
 
 ### Creational
+- Simple Factory
 - Factory / Factory Method
 - Abstract Factory
 - Builder
@@ -23,6 +24,8 @@ Complete design patterns reference for Go.
 - Facade
 - Proxy
 - Composite
+- Flyweight
+- Bridge
 
 ### Behavioral
 - Strategy
@@ -32,6 +35,10 @@ Complete design patterns reference for Go.
 - State
 - Template Method
 - Visitor
+- Mediator
+- Iterator
+- Memento
+- Interpreter
 
 ### Go-Specific Concurrency
 - Circuit Breaker
@@ -45,6 +52,10 @@ Complete design patterns reference for Go.
 ## Reference Files
 
 - **Design Patterns**: [references/design-patterns.md](references/design-patterns.md)
+
+## External Repository
+
+- Core GoF pattern examples are mirrored from: `https://github.com/tony-zhuo/golang-design-pattern`
 
 ## Related Skills
 

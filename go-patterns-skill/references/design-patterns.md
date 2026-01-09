@@ -1,6 +1,48 @@
 # Design Patterns
 
+> 註：本檔案著重於常用模式的「idiomatic Go」範例，完整 GoF 模式實作可參考外部倉庫 `https://github.com/tony-zhuo/golang-design-pattern`。  
+> 目錄對應：`00_simple_factory`、`01_facade`、`02_adapter`、`03_singleton`、`04_factory_method`、`05_abstract_factory`、`06_builder`、`07_prototype`、`08_mediator`、`09_proxy`、`10_observer`、`11_command`、`12_iterator`、`13_composite`、`14_template_method`、`15_strategy`、`16_state`、`17_memento`、`18_flyweight`、`19_interpreter`、`20_decorator`、`21_chain_of_responsibility`、`22_bridge`、`23_visitor`。
+
 ## Creational Patterns
+
+### Simple Factory
+
+```go
+type ShapeType string
+
+const (
+    ShapeCircle ShapeType = "circle"
+    ShapeRect   ShapeType = "rect"
+)
+
+type Shape interface {
+    Area() float64
+}
+
+type Circle struct{ R float64 }
+func (c *Circle) Area() float64 { return math.Pi * c.R * c.R }
+
+type Rect struct{ W, H float64 }
+func (r *Rect) Area() float64 { return r.W * r.H }
+
+// Simple factory 封裝建立細節
+func NewShape(t ShapeType, args ...float64) (Shape, error) {
+    switch t {
+    case ShapeCircle:
+        if len(args) != 1 {
+            return nil, errors.New("circle needs radius")
+        }
+        return &Circle{R: args[0]}, nil
+    case ShapeRect:
+        if len(args) != 2 {
+            return nil, errors.New("rect needs width and height")
+        }
+        return &Rect{W: args[0], H: args[1]}, nil
+    default:
+        return nil, fmt.Errorf("unknown shape: %s", t)
+    }
+}
+```
 
 ### Factory
 
@@ -454,6 +496,79 @@ func (d *Directory) Add(node FileSystemNode) {
 }
 ```
 
+### Bridge
+
+```go
+// Implementor
+type MessageSender interface {
+    Send(to, content string) error
+}
+
+type EmailSender struct{}
+func (s *EmailSender) Send(to, content string) error {
+    fmt.Println("email to", to, ":", content)
+    return nil
+}
+
+type SMSSender struct{}
+func (s *SMSSender) Send(to, content string) error {
+    fmt.Println("sms to", to, ":", content)
+    return nil
+}
+
+// Abstraction
+type Notification struct {
+    sender MessageSender
+}
+
+func NewNotification(sender MessageSender) *Notification {
+    return &Notification{sender: sender}
+}
+
+func (n *Notification) Send(to, content string) error {
+    return n.sender.Send(to, content)
+}
+
+// Usage: runtime 決定組合
+// n := NewNotification(&EmailSender{})
+// n.Send("tony@example.com", "hello")
+```
+
+### Flyweight
+
+```go
+// Intrinsic state
+type Glyph struct {
+    char rune
+    font string
+}
+
+// Flyweight factory：共用相同組合
+type GlyphFactory struct {
+    cache map[string]*Glyph
+}
+
+func NewGlyphFactory() *GlyphFactory {
+    return &GlyphFactory{cache: make(map[string]*Glyph)}
+}
+
+func (f *GlyphFactory) GetGlyph(char rune, font string) *Glyph {
+    key := fmt.Sprintf("%c:%s", char, font)
+    if g, ok := f.cache[key]; ok {
+        return g
+    }
+    g := &Glyph{char: char, font: font}
+    f.cache[key] = g
+    return g
+}
+
+// Extrinsic state 由外部傳入
+type GlyphPosition struct {
+    Glyph *Glyph
+    X, Y  int
+}
+```
+
 ---
 
 ## Behavioral Patterns
@@ -838,6 +953,188 @@ for _, s := range shapes {
     s.Accept(calc)
 }
 fmt.Println(calc.TotalArea)
+```
+
+### Mediator
+
+```go
+// Mediator 介面
+type ChatMediator interface {
+    Broadcast(from, msg string)
+}
+
+// Colleague
+type ChatUser struct {
+    Name     string
+    mediator ChatMediator
+}
+
+func (u *ChatUser) Send(msg string) {
+    u.mediator.Broadcast(u.Name, msg)
+}
+
+func (u *ChatUser) Receive(from, msg string) {
+    fmt.Printf("[%s] %s: %s\n", time.Now().Format(time.RFC3339), from, msg)
+}
+
+// Concrete mediator
+type Room struct {
+    mu    sync.RWMutex
+    users map[string]*ChatUser
+}
+
+func NewRoom() *Room {
+    return &Room{users: make(map[string]*ChatUser)}
+}
+
+func (r *Room) AddUser(u *ChatUser) {
+    r.mu.Lock()
+    defer r.mu.Unlock()
+    u.mediator = r
+    r.users[u.Name] = u
+}
+
+func (r *Room) Broadcast(from, msg string) {
+    r.mu.RLock()
+    defer r.mu.RUnlock()
+    for name, u := range r.users {
+        if name == from {
+            continue
+        }
+        u.Receive(from, msg)
+    }
+}
+```
+
+### Iterator
+
+```go
+type Iterator[T any] interface {
+    HasNext() bool
+    Next() T
+}
+
+// Slice iterator
+type SliceIterator[T any] struct {
+    data []T
+    idx  int
+}
+
+func NewSliceIterator[T any](data []T) *SliceIterator[T] {
+    return &SliceIterator[T]{data: data}
+}
+
+func (it *SliceIterator[T]) HasNext() bool {
+    return it.idx < len(it.data)
+}
+
+func (it *SliceIterator[T]) Next() T {
+    v := it.data[it.idx]
+    it.idx++
+    return v
+}
+
+// Usage with generic constraint
+// it := NewSliceIterator([]int{1, 2, 3})
+// for it.HasNext() { fmt.Println(it.Next()) }
+```
+
+### Memento
+
+```go
+// Memento
+type EditorState struct {
+    Content string
+    Cursor  int
+}
+
+// Originator
+type Editor struct {
+    content string
+    cursor  int
+}
+
+func (e *Editor) Type(text string) {
+    e.content = e.content[:e.cursor] + text + e.content[e.cursor:]
+    e.cursor += len(text)
+}
+
+func (e *Editor) MoveCursor(pos int) {
+    if pos >= 0 && pos <= len(e.content) {
+        e.cursor = pos
+    }
+}
+
+func (e *Editor) Save() EditorState {
+    return EditorState{Content: e.content, Cursor: e.cursor}
+}
+
+func (e *Editor) Restore(s EditorState) {
+    e.content = s.Content
+    e.cursor = s.Cursor
+}
+
+// Caretaker
+type History struct {
+    stack []EditorState
+}
+
+func (h *History) Push(s EditorState) {
+    h.stack = append(h.stack, s)
+}
+
+func (h *History) Pop() (EditorState, bool) {
+    if len(h.stack) == 0 {
+        return EditorState{}, false
+    }
+    last := h.stack[len(h.stack)-1]
+    h.stack = h.stack[:len(h.stack)-1]
+    return last, true
+}
+```
+
+### Interpreter
+
+```go
+// 解析簡單表達式：number +/- number
+type Expr interface {
+    Eval() int
+}
+
+type Number struct{ Value int }
+func (n *Number) Eval() int { return n.Value }
+
+type Add struct{ Left, Right Expr }
+func (a *Add) Eval() int { return a.Left.Eval() + a.Right.Eval() }
+
+type Sub struct{ Left, Right Expr }
+func (s *Sub) Eval() int { return s.Left.Eval() - s.Right.Eval() }
+
+// 非完整 parser，只示意 interpreter 結構
+func ParseExpr(tokens []string) Expr {
+    // 例如 "1 + 2 - 3" -> ((1 + 2) - 3)
+    if len(tokens) == 1 {
+        v, _ := strconv.Atoi(tokens[0])
+        return &Number{Value: v}
+    }
+    left := ParseExpr(tokens[:len(tokens)-2])
+    rightVal, _ := strconv.Atoi(tokens[len(tokens)-1])
+    right := &Number{Value: rightVal}
+
+    op := tokens[len(tokens)-2]
+    switch op {
+    case "+":
+        return &Add{Left: left, Right: right}
+    case "-":
+        return &Sub{Left: left, Right: right}
+    default:
+        return left
+    }
+}
+
+// Usage
+// expr := ParseExpr(strings.Split("1 + 2 - 3", " "))
+// fmt.Println(expr.Eval()) // 0
 ```
 
 ---
