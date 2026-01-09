@@ -12,6 +12,7 @@ ifndef SKILL
 	@ls -d *-skill/ 2>/dev/null | sed 's/\///'
 else
 	@mkdir -p $(SKILLS_DIR)
+	@rm -rf $(SKILLS_DIR)/$(SKILL)
 	@cp -r $(SKILL) $(SKILLS_DIR)/
 	@echo "Installed $(SKILL) to $(SKILLS_DIR)/$(SKILL)"
 endif
@@ -19,6 +20,7 @@ endif
 install-all:
 	@mkdir -p $(SKILLS_DIR)
 	@for skill in $(SKILLS); do \
+		rm -rf $(SKILLS_DIR)/$$skill; \
 		cp -r $$skill $(SKILLS_DIR)/; \
 		echo "Installed $$skill to $(SKILLS_DIR)/$$skill"; \
 	done
