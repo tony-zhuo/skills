@@ -1,6 +1,7 @@
-.PHONY: install
+.PHONY: install install-all
 
 SKILLS_DIR := ~/.claude/skills
+SKILLS := $(wildcard *-skill)
 
 install:
 ifndef SKILL
@@ -14,3 +15,11 @@ else
 	@cp -r $(SKILL) $(SKILLS_DIR)/
 	@echo "Installed $(SKILL) to $(SKILLS_DIR)/$(SKILL)"
 endif
+
+install-all:
+	@mkdir -p $(SKILLS_DIR)
+	@for skill in $(SKILLS); do \
+		cp -r $$skill $(SKILLS_DIR)/; \
+		echo "Installed $$skill to $(SKILLS_DIR)/$$skill"; \
+	done
+	@echo "All skills installed."
